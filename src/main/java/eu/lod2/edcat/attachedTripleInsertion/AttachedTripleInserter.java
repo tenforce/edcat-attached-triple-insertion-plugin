@@ -99,7 +99,7 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
       Resource descriptionObject = ( Resource ) attachedTriplesStatement.getObject();
       Statement formatStatement =
           singleCtxFilter( descriptionObject, Sparql.namespaced( "dct", "format" ), null );
-      URI format = ( URI ) new URIImpl( formatStatement.getObject().stringValue() );
+      URI format = new URIImpl( formatStatement.getObject().stringValue() );
       Statement contentStatement =
           singleCtxFilter( descriptionObject, Sparql.namespaced( "edcat", "attachedTripleInserter/content" ), null );
       String content = contentStatement.getObject().stringValue();
