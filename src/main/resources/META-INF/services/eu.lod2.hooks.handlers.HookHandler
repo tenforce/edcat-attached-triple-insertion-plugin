@@ -1,1 +1,2 @@
-eu.lod2.edcat.attachedTripleInsertion.AttachedTripleInserter
+eu.lod2.edcat.attachedTripleInsertion.CatalogAttachedTripleInserter
+eu.lod2.edcat.attachedTripleInsertion.DatasetAttachedTripleInserter

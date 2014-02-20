@@ -3,9 +3,6 @@ package eu.lod2.edcat.attachedTripleInsertion;
 import eu.lod2.edcat.utils.Tuple;
 import eu.lod2.hooks.constraints.Constraint;
 import eu.lod2.hooks.constraints.Priority;
-import eu.lod2.hooks.contexts.AtContext;
-import eu.lod2.hooks.handlers.dcat.AtCreateHandler;
-import eu.lod2.hooks.handlers.dcat.AtUpdateHandler;
 import eu.lod2.query.Sparql;
 import org.openrdf.model.*;
 import org.openrdf.model.impl.StatementImpl;
@@ -24,39 +21,57 @@ import java.util.Collection;
 /**
  * Allows the user to attach raw triples to the request in a raw triple format.
  * <p/>
- * Supported formats are
+ * Supported formats may be extended in the future.
  */
-public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler {
+public abstract class AttachedTripleInserter {
 
-  /** Contains the context of the request on which this AttachedTripleInserter operates. */
-  private AtContext context;
 
-  @Override
-  public void handleAtCreate( AtContext context ) {
-    this.context = context;
-    appendTriples();
-  }
+  // --- PROVIDING FOR THE HOOKS
 
-  @Override
-  public void handleAtUpdate( AtContext context ) {
-    this.context = context;
-    appendTriples();
-  }
-
-  @Override
+  // @Override overridden for those extending this class and implementing the hooks.
+  @SuppressWarnings( "UnusedDeclaration" )
   public Collection<Priority> getConstraints( String hook ) {
     return Arrays.asList( Constraint.EARLY );
   }
+
+
+  // --- ABSTRACTING THE SEPARATE AtContext OBJECTS
+
+
+  /**
+   * Retrieves the URI of the object on which we are operating in this request.
+   *
+   * @return URI of the object on which this request operates.
+   */
+  protected abstract URI getInsertedObjectUri();
+
+  /**
+   * Returns the model from the currently active context.
+   *
+   * @return Model which describes the triples of the current request.
+   */
+  protected abstract Model getContextModel();
+
+  /**
+   * Retrieves the base URI for importing triples in the current model.
+   *
+   * @return base URI.
+   */
+  protected abstract URI getContextBaseURI();
+
+
+  // --- LOGIC FOR PARSING AND ADDING THE TRIPLES
+
 
   /**
    * Appends the triples to the context's model which have been attached through an attached
    * definition and removes the original triples.
    */
-  private void appendTriples() {
+  protected void appendTriples() {
     for ( Tuple<URI, String> attachedTripleDefinition : filterOutAttachedTriples() )
       try {
         for ( Statement triple : parseTriples( attachedTripleDefinition.left, attachedTripleDefinition.right ) )
-          context.getStatements().add( replaceIdentifier( triple ) );
+          getContextModel().add( replaceIdentifier( triple ) );
       } catch ( IOException e ) {
         LoggerFactory.getLogger( getClass() ).error( "Failed to parse triples." );
       } catch ( RDFParseException e ) {
@@ -75,7 +90,7 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
     StringReader stream = new StringReader( content );
     return Rio.parse(
         stream,
-        context.getDatasetUri().stringValue(),
+        getContextBaseURI().stringValue(),
         getRioFormat( format ) );
   }
 
@@ -88,7 +103,7 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
    * of the Tuple represents the type of input, the Right represents its content.
    */
   private Collection<Tuple<URI, String>> filterOutAttachedTriples() {
-    Model attachedTripleStatements = context.getStatements().filter(
+    Model attachedTripleStatements = getContextModel().filter(
         null,
         Sparql.namespaced( "edcat", "attachedTripleInserter/attachedTriples" ),
         null );
@@ -106,9 +121,9 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
       // add the relevant tuple
       result.add( new Tuple<URI, String>( format, content ) );
       // remove the original triples
-      context.getStatements().remove( formatStatement );
-      context.getStatements().remove( contentStatement );
-      context.getStatements().remove( attachedTriplesStatement );
+      getContextModel().remove( formatStatement );
+      getContextModel().remove( contentStatement );
+      getContextModel().remove( attachedTriplesStatement );
     }
 
     return result;
@@ -123,7 +138,7 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
    */
   private Statement replaceIdentifier( Statement s ) {
     URI statementIdentifier = Sparql.namespaced( "edcat", "attachedTripleInserter/replacedIdentifier" );
-    URI newIdentifier = context.getDatasetUri();
+    URI newIdentifier = getInsertedObjectUri();
     s = new StatementImpl(
         s.getSubject().equals( statementIdentifier ) ? newIdentifier : s.getSubject(),
         s.getPredicate().equals( statementIdentifier ) ? newIdentifier : s.getPredicate(),
@@ -143,7 +158,7 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
    * @return First matching statement.
    */
   private Statement singleCtxFilter( Resource subj, URI pred, Value obj, Resource... contexts ) {
-    return context.getStatements().filter( subj, pred, obj, contexts ).iterator().next();
+    return getContextModel().filter( subj, pred, obj, contexts ).iterator().next();
   }
 
   /**
@@ -166,5 +181,4 @@ public class AttachedTripleInserter implements AtCreateHandler, AtUpdateHandler 
 
     throw new IllegalArgumentException( "Don't know how to parse format " + format );
   }
-
 }
