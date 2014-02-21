@@ -5,7 +5,8 @@ import eu.lod2.hooks.constraints.Constraint;
 import eu.lod2.hooks.constraints.Priority;
 import eu.lod2.query.Sparql;
 import org.openrdf.model.*;
-import org.openrdf.model.impl.StatementImpl;
+import org.openrdf.model.impl.ContextStatementImpl;
+import org.openrdf.model.impl.LinkedHashModel;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFParseException;
@@ -88,10 +89,25 @@ public abstract class AttachedTripleInserter {
    */
   private Model parseTriples( URI format, String content ) throws IOException, RDFParseException {
     StringReader stream = new StringReader( content );
-    return Rio.parse(
-        stream,
-        getContextBaseURI().stringValue(),
-        getRioFormat( format ) );
+    return
+        graphiphyTriples(
+            Rio.parse(
+                stream,
+                getContextBaseURI().stringValue(),
+                getRioFormat( format ) ) );
+  }
+
+  /**
+   * Sets the graph for each of the triples in {@code model} to be that of {@link #getContextBaseURI}
+   *
+   * @param model Model which contains the triples to translate.
+   * @return Model in which the triples have been translated.
+   */
+  private Model graphiphyTriples( Model model ) {
+    Model newModel = new LinkedHashModel();
+    for( Statement s : model )
+      newModel.add( s.getSubject(), s.getPredicate(), s.getObject(), getContextBaseURI() );
+    return newModel;
   }
 
   /**
@@ -139,10 +155,11 @@ public abstract class AttachedTripleInserter {
   private Statement replaceIdentifier( Statement s ) {
     URI statementIdentifier = Sparql.namespaced( "edcat", "attachedTripleInserter/replacedIdentifier" );
     URI newIdentifier = getInsertedObjectUri();
-    s = new StatementImpl(
+    s = new ContextStatementImpl(
         s.getSubject().equals( statementIdentifier ) ? newIdentifier : s.getSubject(),
         s.getPredicate().equals( statementIdentifier ) ? newIdentifier : s.getPredicate(),
-        s.getObject().equals( statementIdentifier ) ? newIdentifier : s.getObject()
+        s.getObject().equals( statementIdentifier ) ? newIdentifier : s.getObject(),
+        s.getContext()
     );
 
     return s;
