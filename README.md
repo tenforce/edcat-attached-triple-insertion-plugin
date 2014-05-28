@@ -1,8 +1,8 @@
 edcat-attached-triple-insertion-plugin
 ======================================
 
-[EDCAT] (edcat) plugin allowing requests to contain triples in RDF/XML or n3 format inside the json request.
+[EDCAT] (https://github.com/tenforce/edcat) plugin allowing requests to contain triples in RDF/XML or n3 format inside the json request.
 
 ### License
-See [edcat license] (edcat/blob/master/license.md)
+See [edcat license] (https://github.com/tenforce/edcat/blob/master/license.md)
 
