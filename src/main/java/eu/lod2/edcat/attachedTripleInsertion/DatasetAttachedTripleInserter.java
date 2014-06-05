@@ -1,9 +1,9 @@
 package eu.lod2.edcat.attachedTripleInsertion;
 
-import eu.lod2.hooks.contexts.AtContext;
+import eu.lod2.hooks.contexts.dataset.AtContext;
 import eu.lod2.hooks.handlers.dcat.ActionAbortException;
-import eu.lod2.hooks.handlers.dcat.AtCreateHandler;
-import eu.lod2.hooks.handlers.dcat.AtUpdateHandler;
+import eu.lod2.hooks.handlers.dcat.dataset.AtCreateHandler;
+import eu.lod2.hooks.handlers.dcat.dataset.AtUpdateHandler;
 import org.openrdf.model.Model;
 import org.openrdf.model.URI;
 
