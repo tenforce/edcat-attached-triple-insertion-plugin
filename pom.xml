@@ -15,7 +15,7 @@
     <dependency>
       <groupId>eu.lod2.edcat</groupId>
       <artifactId>edcat-plugin-base</artifactId>
-      <version>0.4.0-SNAPSHOT</version>
+      <version>0.4.0</version>
     </dependency>
   </dependencies>
   <build>
